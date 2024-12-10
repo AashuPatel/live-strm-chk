@@ -28,12 +28,21 @@ app.post('/start-stream', (req, res) => {
   const ffmpeg = spawn('ffmpeg', [
     '-re', '-i', audioStreamUrl,
     '-loop', '1', '-i', defaultStaticImagePath,
-    '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', // Ensure dimensions are divisible by 2
-    '-c:v', 'libx264', '-tune', 'stillimage',
-    '-c:a', 'aac', '-b:a', '128k',
-    '-pix_fmt', 'yuv420p', '-shortest',
-    '-f', 'flv', youtubeRtmpUrl,
+    '-vf', 'scale=256:-2', // Set resolution to 144p (256x144)
+    '-c:v', 'libx264',
+    '-preset', 'veryfast', // Faster encoding for lower latency
+    '-b:v', '300k', // Set video bitrate for 144p quality
+    '-bufsize', '500k', // Buffer size for smoother streaming
+    '-c:a', 'aac',
+    '-b:a', '128k', // Maintain lower audio bitrate for minimal quality
+    '-ar', '44100', // Audio sampling rate
+    '-pix_fmt', 'yuv420p',
+    '-f', 'flv',
+    '-rtmp_buffer', '500k', // Buffer setting for RTMP transmission
+    '-rtmp_live', 'live', // Ensure live streaming compatibility
+    youtubeRtmpUrl,
   ]);
+  
   
 
   ffmpeg.stdout.on('data', (data) => {
