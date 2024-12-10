@@ -2,25 +2,22 @@ const express = require('express');
 const { spawn } = require('child_process');
 const fs = require('fs');
 require('dotenv').config(); // Load environment variables
-
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Default static image path (absolute path to the image file)
 const defaultStaticImagePath = './Image.png'; // Update this with your actual image path
 
-// Variable to track if streaming is active
-let isStreaming = false;
-let ffmpegProcess = null;
+let ffmpegProcess = null; // Variable to store the FFmpeg process
 
 // Endpoint to start FFmpeg stream
+app.get('/', (req, res) => {
+  res.send("Get request");
+});
+
 app.post('/start-stream', (req, res) => {
-  if (isStreaming) {
-    // If streaming is already active, kill the existing process
-    console.log('Stream is already running. Terminating the existing stream...');
-    ffmpegProcess.kill('SIGINT');
-    isStreaming = false; // Reset streaming status
-    ffmpegProcess = null; // Clear the process reference
+  if (ffmpegProcess) {
+    return res.status(400).send('Streaming is already running.');
   }
 
   const streamKey = process.env.YOUTUBE_STREAM_KEY; // Use the stream key from .env
@@ -49,9 +46,6 @@ app.post('/start-stream', (req, res) => {
     '-rtmp_live', 'live',
   ]);
 
-  // Set streaming status to true
-  isStreaming = true;
-
   ffmpegProcess.stdout.on('data', (data) => {
     console.log(`FFmpeg stdout: ${data}`);
   });
@@ -62,24 +56,20 @@ app.post('/start-stream', (req, res) => {
 
   ffmpegProcess.on('close', (code) => {
     console.log(`FFmpeg process exited with code ${code}`);
-    isStreaming = false; // Reset the flag when the stream stops
-    ffmpegProcess = null; // Clear the process reference
+    ffmpegProcess = null; // Reset the process variable when FFmpeg exits
   });
 
   res.send('Streaming started!');
 });
 
-// Endpoint to stop the streaming
-app.post('/stop-stream', (req, res) => {
-  if (!isStreaming) {
-    return res.status(400).send('No stream is currently running.');
+// Endpoint to stop FFmpeg stream
+app.get('/stop-stream', (req, res) => {
+  if (!ffmpegProcess) {
+    return res.status(400).send('No streaming process is currently running.');
   }
 
-  // Kill the streaming process
-  ffmpegProcess.kill('SIGINT');
-  isStreaming = false;
-  ffmpegProcess = null;
-
+  ffmpegProcess.kill('SIGINT'); // Gracefully terminate the FFmpeg process
+  ffmpegProcess = null; // Reset the process variable
   res.send('Streaming stopped!');
 });
 
