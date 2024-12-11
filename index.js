@@ -119,9 +119,9 @@ app.post('/start-stream', (req, res) => {
 
 // Endpoint to stop FFmpeg stream
 app.get('/stop-stream', (req, res) => {
-  if (!ffmpegProcess) {
-    return res.status(400).send('No streaming process is currently running.');
-  }
+  // if (!ffmpegProcess) {
+  //   return res.status(400).send('No streaming process is currently running.');
+  // }
 
   ffmpegProcess.kill('SIGINT'); // Gracefully terminate the FFmpeg process
   ffmpegProcess = null; // Reset the process variable
